@@ -1,0 +1,75 @@
+
+###########
+#
+# Development Image Build File
+#
+# Usage:
+#
+#   docker run -it -v <project-resource-directory>:/workspace \
+#                  --name <container-name> [image-name]
+#
+
+
+FROM centos
+MAINTAINER David.Yan
+
+RUN yum -y update
+RUN yum -y install tar git
+
+RUN yum install -y gcc
+#RUN yum install -y go
+RUN yum install -y perl-Data-Dumper 
+
+RUN yum install -y vim
+# tmux
+RUN yum install -y libevent-devel ncurses-devel automake ncurses-devel gcc automake autoconf libtool make
+RUN git clone https://github.com/gmarik/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+RUN git clone https://github.com/tmux/tmux.git \
+	&& cd tmux \
+	&& sh autogen.sh \
+	&& ./configure && make
+#tmux 
+# 配置环境变量
+ENV NVM_DIR /usr/local/nvm
+ENV NODE_VERSION 0.12.5
+ENV WORK_DIR /workspace
+
+# 设置工作目录
+WORKDIR ${WORK_DIR}
+#ADD . /$WORK_DIR
+
+
+# 下载和配置Node.js环境
+# 这些命令一定要写在一起, 否则`nvm`命令会找不到
+RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.25.0/install.sh | bash \
+    && source $NVM_DIR/nvm.sh \
+    && nvm install v$NODE_VERSION \
+    && nvm use v$NODE_VERSION \
+    && nvm alias default v$NODE_VERSION
+
+ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
+ENV PATH      $NVM_DIR/v$NODE_VERSION/bin:$PATH
+# 下载和配置grunt环境
+#RUN npm install -g grunt-cli
+#RUN npm install -g grunt
+
+# 下载和配置Bee环境
+ENV GOPATH /workspace/goprj
+ENV PATH $GOPATH/bin:$PATH
+
+#RUN go get github.com/astaxie/beego
+#RUN go get github.com/beego/bee
+#RUN go get github.com/astaxie/beego/session
+#RUN go get github.com/astaxie/beego/orm
+#RUN go get github.com/astaxie/beego/logs
+#RUN go get github.com/beego/i18n
+
+
+RUN yum install -y openssh-server
+RUN mkdir /var/run/sshd
+RUN echo 'root:screencast' |chpasswd
+EXPOSE 22
+# 公开镜像的10001端口
+EXPOSE 80
+
+CMD bash

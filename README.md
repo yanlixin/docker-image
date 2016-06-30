@@ -36,10 +36,14 @@ docker run --name admin admin
 > * 如果是在Windows或Mac系统下，由于Docker是运行在虚拟机里的，所以访问时`localhost`要换为虚拟机的ip地址。
 > * 可以通过`docker inspect <container_id>`来获取运行的container的ip和端口信息
 
+for i in {10000..10009}; do
+VBoxManage modifyvm "boot2docker-vm" --natpf1 "tcp-port$i,tcp,,$i,,$i";
+VBoxManage modifyvm "boot2docker-vm" --natpf1 "udp-port$i,udp,,$i,,$i";
+done
 
 
 #安装My SQL
-groupadd mysql
+groupadd mysql 
 useradd -r -g mysql mysql
 cd /usr/local
 tar zxvf /path/to/mysql-VERSION-OS.tar.gz
@@ -57,10 +61,3 @@ chown -R mysql data mysql-files
 bin/mysqld_safe --user=mysql &
 # Next command is optional
 cp support-files/mysql.server /etc/init.d/mysql.server
-
-
-
-for i in {10000..10009}; do
-VBoxManage modifyvm "boot2docker-vm" --natpf1 "tcp-port$i,tcp,,$i,,$i";
-VBoxManage modifyvm "boot2docker-vm" --natpf1 "udp-port$i,udp,,$i,,$i";
-done

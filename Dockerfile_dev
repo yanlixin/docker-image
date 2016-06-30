@@ -10,14 +10,13 @@
 #
 
 
-FROM centos
+FROM centos:7
 MAINTAINER David.Yan
 
 RUN yum -y update
 RUN yum -y install tar git
 
 RUN yum install -y gcc
-#RUN yum install -y go
 RUN yum install -y perl-Data-Dumper 
 
 RUN yum install -y vim
@@ -31,7 +30,7 @@ RUN git clone https://github.com/tmux/tmux.git \
 #tmux 
 # 配置环境变量
 ENV NVM_DIR /usr/local/nvm
-ENV NODE_VERSION 0.12.5
+ENV NODE_VERSION 6.2.2
 ENV WORK_DIR /workspace
 
 # 设置工作目录
@@ -41,35 +40,64 @@ WORKDIR ${WORK_DIR}
 
 # 下载和配置Node.js环境
 # 这些命令一定要写在一起, 否则`nvm`命令会找不到
-RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.25.0/install.sh | bash \
+RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.31.2/install.sh | bash \
     && source $NVM_DIR/nvm.sh \
     && nvm install v$NODE_VERSION \
     && nvm use v$NODE_VERSION \
-    && nvm alias default v$NODE_VERSION
+    && nvm alias default v$NODE_VERSION \
+    && npm config set registry https://registry.npm.taobao.org \
+    && npm install -g grunt-cli grunt
 
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH      $NVM_DIR/v$NODE_VERSION/bin:$PATH
+
 # 下载和配置grunt环境
 #RUN npm install -g grunt-cli
 #RUN npm install -g grunt
 
 # 下载和配置Bee环境
-ENV GOPATH /workspace/goprj
-ENV PATH $GOPATH/bin:$PATH
+ENV GOLANG_VERSION 1.6.2
+ENV GOLANG_DOWNLOAD_URL https://codeload.github.com/golang/go/tar.gz/go1.6.2
+ENV GOLANG_DOWNLOAD_SHA256 e40c36ae71756198478624ed1bb4ce17597b3c19d243f3f0899bb5740d56212a
 
-#RUN go get github.com/astaxie/beego
-#RUN go get github.com/beego/bee
-#RUN go get github.com/astaxie/beego/session
-#RUN go get github.com/astaxie/beego/orm
-#RUN go get github.com/astaxie/beego/logs
-#RUN go get github.com/beego/i18n
+RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
+	&& tar -C /usr/local -xzf golang.tar.gz \
+	&& rm golang.tar.gz
 
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+
+RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
+WORKDIR $GOPATH
+
+#COPY go-wrapper /usr/local/bin/
+
+# 安装配置ngxin环境
+# Add the ngix and go dependent repository
+ADD nginx.repo /etc/yum.repos.d/nginx.repo
+# Installing nginx 
+RUN yum -y install nginx
+
+# Installing supervisor
+RUN yum install -y python-setuptools
+RUN easy_install pip
+RUN pip install supervisor
+
+ADD index.htm /var/www/data/www 
+
+# Adding the configuration file of the nginx
+ADD nginx.conf /etc/nginx/nginx.conf
+ADD default.conf /etc/nginx/conf.d/default.conf
+
+# Adding the configuration file of the Supervisor
+ADD supervisord.conf /etc/
 
 RUN yum install -y openssh-server
 RUN mkdir /var/run/sshd
 RUN echo 'root:screencast' |chpasswd
 EXPOSE 22
-# 公开镜像的10001端口
+
+# 公开镜像的80端口
 EXPOSE 80
 
 CMD bash

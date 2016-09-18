@@ -40,7 +40,7 @@ for i in {10000..10009}; do
 VBoxManage modifyvm "boot2docker-vm" --natpf1 "tcp-port$i,tcp,,$i,,$i";
 VBoxManage modifyvm "boot2docker-vm" --natpf1 "udp-port$i,udp,,$i,,$i";
 done
-
+curl -H "Content-Type: application/json" -X POST -d '{"reqSn":"xyz"}' http://192.168.1.126:40091/chanpay/G60004/sendMessage?a=0.8952294969931245
 
 #安装My SQL
 groupadd mysql 
